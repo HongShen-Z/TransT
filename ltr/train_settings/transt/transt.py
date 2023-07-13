@@ -68,7 +68,8 @@ def run(settings):
                              shuffle=True, drop_last=True, stack_dim=0)
 
     # Create network and actor
-    model = transt_models.transt_resnet50(settings)
+    # model = transt_models.transt_resnet50(settings)
+    model = transt_models.transt_mobilenet(settings)
 
     # Wrap the network for multi GPU training
     if settings.multi_gpu:
