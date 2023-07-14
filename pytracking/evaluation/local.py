@@ -9,7 +9,7 @@ def local_env_settings():
     settings.got10k_path = ''
     settings.got_packed_results_path = ''
     settings.got_reports_path = ''
-    settings.lasot_path = ''
+    settings.lasot_path = '/mnt/e/datasets/SOT/LaSOT/'
     settings.network_path = '/mnt/d/projects/TransT/pytracking/networks/'    # Where tracking networks are stored.
     settings.nfs_path = ''
     settings.otb_path = ''

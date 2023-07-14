@@ -1,8 +1,8 @@
 class EnvironmentSettings:
     def __init__(self):
-        self.workspace_dir = ''    # Base directory for saving network checkpoints.
+        self.workspace_dir = '/mnt/d/projects/TransT/checkpoints/'    # Base directory for saving network checkpoints.
         self.tensorboard_dir = self.workspace_dir + '/tensorboard/'    # Directory for tensorboard files.
-        self.lasot_dir = ''
+        self.lasot_dir = '/mnt/e/datasets/SOT/LaSOT/'
         self.got10k_dir = ''
         self.trackingnet_dir = ''
         self.coco_dir = ''
