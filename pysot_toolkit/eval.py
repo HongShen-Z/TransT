@@ -44,9 +44,10 @@ def main():
     assert len(trackers) > 0
     args.num = min(args.num, len(trackers))
 
-    root = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                         'testing_dataset'))
-    root = os.path.join(root, args.dataset)
+    # root = os.path.realpath(os.path.join(os.path.dirname(__file__),
+    #                                      'testing_dataset'))
+    # root = os.path.join(root, args.dataset)
+    root = '/mnt/e/datasets/SOT/LaSOT/'
     if 'OTB' in args.dataset:
         dataset = OTBDataset(args.dataset, root)
         dataset.set_tracker(tracker_dir, trackers)

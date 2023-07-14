@@ -70,9 +70,11 @@ class LaSOTDataset(Dataset):
         pbar = tqdm(meta_data.keys(), desc='loading '+name, ncols=100)
         self.videos = {}
         for video in pbar:
+            if video != 'airplane-1':
+                continue
             pbar.set_postfix_str(video)
             self.videos[video] = LaSOTVideo(video,
-                                          dataset_root,
+                                          os.path.join(dataset_root, video.split('-')[0]),
                                           meta_data[video]['video_dir'],
                                           meta_data[video]['init_rect'],
                                           meta_data[video]['img_names'],
