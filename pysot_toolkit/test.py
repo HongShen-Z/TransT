@@ -44,7 +44,7 @@ def main():
 
     # create model
     net = NetWithBackbone(net_path=net_path, use_gpu=True)
-    tracker = Tracker(name='transt', net=net, window_penalty=0.49, exemplar_size=128, instance_size=256)
+    tracker = Tracker(name='transt', net=net, window_penalty=0.49, exemplar_size=112, instance_size=256)
 
     # create dataset
     dataset = DatasetFactory.create_dataset(name=args.dataset,

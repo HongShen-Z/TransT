@@ -17,7 +17,6 @@ class Tracker(object):
         self.window_penalty = window_penalty
         self.exemplar_size = exemplar_size
         self.instance_size = instance_size
-        self.net = self.net
 
     def _convert_score(self, score):
 
@@ -106,7 +105,7 @@ class Tracker(object):
 
     def initialize(self, image, info: dict) -> dict:
         tic = time.time()
-        hanning = np.hanning(32)
+        hanning = np.hanning(16)
         window = np.outer(hanning, hanning)
         self.window = window.flatten()
         # Initialize

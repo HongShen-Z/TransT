@@ -53,7 +53,7 @@ class FrozenBatchNorm2d(torch.nn.Module):
         return x * scale + bias
 
 
-class BackboneBase(nn.Module):
+class BackboneBase_old(nn.Module):
 
     def __init__(self, backbone: nn.Module, num_channels: int):
         super().__init__()
@@ -71,6 +71,18 @@ class BackboneBase(nn.Module):
         return out
 
 
+class BackboneBase(nn.Module):
+
+    def __init__(self, backbone: nn.Module, num_channels: int):
+        super().__init__()
+        self.body = backbone
+        self.num_channels = num_channels
+
+    def forward(self, x):
+        x = self.body(x)
+        return x
+
+
 class Backbone(BackboneBase):
     """ResNet backbone with frozen BatchNorm."""
     def __init__(self,
@@ -79,8 +91,9 @@ class Backbone(BackboneBase):
                  frozen_layers):
         # backbone = backbones.resnet50(output_layers=output_layers, pretrained=pretrained,
         #                               frozen_layers=frozen_layers)
-        backbone = backbones.mobilenetv3_large(pretrained=pretrained, frozen_layers=frozen_layers)
-        num_channels = 1024
+        # backbone = backbones.mobilenetv3_large(pretrained=pretrained)
+        backbone = backbones.multimax(pretrained=pretrained)
+        num_channels = 128
         super().__init__(backbone, num_channels)
 
 
@@ -101,9 +114,9 @@ class Joiner(nn.Sequential):
 
 
 def build_backbone(settings, backbone_pretrained=True, frozen_backbone_layers=()):
-    position_embedding = build_position_encoding(settings)
+    # position_embedding = build_position_encoding(settings)
     # backbone = Backbone(output_layers=['layer3'], pretrained=backbone_pretrained, frozen_layers=frozen_backbone_layers)
-    backbone = Backbone(pretrained=backbone_pretrained, frozen_layers=frozen_backbone_layers)
-    model = Joiner(backbone, position_embedding)
-    model.num_channels = backbone.num_channels
-    return model
+    backbone = Backbone(output_layers=None, pretrained=backbone_pretrained, frozen_layers=frozen_backbone_layers)
+    # model = Joiner(backbone, position_embedding)
+    # model.num_channels = backbone.num_channels
+    return backbone

@@ -147,26 +147,28 @@ class MobileNetV3(nn.Module):
             input_channel = output_channel
         self.features = nn.Sequential(*layers)
         # building last several layers
-        self.conv = conv_1x1_bn(input_channel, exp_size)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        output_channel = {'large': 1280, 'small': 1024}
-        output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
-        self.classifier = nn.Sequential(
-            nn.Linear(exp_size, output_channel),
-            h_swish(),
-            nn.Dropout(0.2),
-            nn.Linear(output_channel, num_classes),
-        )
+        # self.conv = conv_1x1_bn(input_channel, exp_size)
+        # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        # output_channel = {'large': 1280, 'small': 1024}
+        # output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
+        # self.classifier = nn.Sequential(
+        #     nn.Linear(exp_size, output_channel),
+        #     h_swish(),
+        #     nn.Dropout(0.2),
+        #     nn.Linear(output_channel, num_classes),
+        # )
 
         self._initialize_weights()
 
     def forward(self, x):
+        output = {}
         x = self.features(x)
-        x = self.conv(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+        # x = self.conv(x)
+        # x = self.avgpool(x)
+        # x = x.view(x.size(0), -1)
+        # x = self.classifier(x)
+        output['s5'] = x
+        return output
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -194,7 +196,7 @@ def mobilenetv3_large(pretrained=False, **kwargs):
         # 128,128,16 -> 64,64,24    1/4
         [3,   4,  24, 0, 0, 2],
         [3,   3,  24, 0, 0, 1],
-        # 64,64,24 -> 32,32,40      1/8
+        # 64,64,24 -> 32,32,40      1/8      如果只改backbone，特征图最后一层要求是1/8(32×32)，输出通道数是1024(32×32)
         [5,   3,  40, 1, 0, 2],
         [5,   3,  40, 1, 0, 1],
         [5,   3,  40, 1, 0, 1],
@@ -214,7 +216,7 @@ def mobilenetv3_large(pretrained=False, **kwargs):
     model = MobileNetV3(cfgs, mode='large', **kwargs)
     if pretrained:
         state_dict = torch.load('/mnt/e/Postgra/learningcode/cache/torch/checkpoints/mobilenetv3-large-1cd25616.pth')
-        model.load_state_dict(state_dict, strict=True)
+        model.load_state_dict(state_dict, strict=False)
     return model
 
 

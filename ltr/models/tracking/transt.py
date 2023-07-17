@@ -11,10 +11,13 @@ from util.misc import (NestedTensor, nested_tensor_from_tensor,
 from ltr.models.backbone.transt_backbone import build_backbone
 from ltr.models.loss.matcher import build_matcher
 from ltr.models.neck.featurefusion_network import build_featurefusion_network
+from ltr.models.neck.correlation_module import build_correlation, SepConv
+from ltr.models.backbone.multimax import InvertedResidual
 
 
-class TransT(nn.Module):
+class TransT_old(nn.Module):
     """ This is the TransT module that performs single object tracking """
+
     def __init__(self, backbone, featurefusion_network, num_classes):
         """ Initializes the model.
         Parameters:
@@ -52,11 +55,12 @@ class TransT(nn.Module):
             template = nested_tensor_from_tensor(template)
         feature_search, pos_search = self.backbone(search)
         feature_template, pos_template = self.backbone(template)
-        src_search, mask_search= feature_search[-1].decompose()
+        src_search, mask_search = feature_search[-1].decompose()
         assert mask_search is not None
         src_template, mask_template = feature_template[-1].decompose()
         assert mask_template is not None
-        hs = self.featurefusion_network(self.input_proj(src_template), mask_template, self.input_proj(src_search), mask_search, pos_template[-1], pos_search[-1])
+        hs = self.featurefusion_network(self.input_proj(src_template), mask_template, self.input_proj(src_search),
+                                        mask_search, pos_template[-1], pos_search[-1])
 
         outputs_class = self.class_embed(hs)
         outputs_coord = self.bbox_embed(hs).sigmoid()
@@ -69,11 +73,12 @@ class TransT(nn.Module):
         features_search, pos_search = self.backbone(search)
         feature_template = self.zf
         pos_template = self.pos_template
-        src_search, mask_search= features_search[-1].decompose()
+        src_search, mask_search = features_search[-1].decompose()
         assert mask_search is not None
         src_template, mask_template = feature_template[-1].decompose()
         assert mask_template is not None
-        hs = self.featurefusion_network(self.input_proj(src_template), mask_template, self.input_proj(src_search), mask_search, pos_template[-1], pos_search[-1])
+        hs = self.featurefusion_network(self.input_proj(src_template), mask_template, self.input_proj(src_search),
+                                        mask_search, pos_template[-1], pos_search[-1])
 
         outputs_class = self.class_embed(hs)
         outputs_coord = self.bbox_embed(hs).sigmoid()
@@ -87,12 +92,79 @@ class TransT(nn.Module):
         self.zf = zf
         self.pos_template = pos_template
 
+
+class TransT(nn.Module):
+    """ This is the module that performs single object tracking """
+
+    def __init__(self, backbone, correlation_module, num_classes):
+        """ Initializes the model.
+        Parameters:
+            backbone: torch module of the backbone to be used. See transt_backbone.py
+            correlation_module: torch module of the cross correlation. See correlation_module.py
+            num_classes: number of object classes, always 1 for single object tracking
+        """
+        super().__init__()
+        self.correlation_module = correlation_module
+        hidden_dim = correlation_module.chn
+
+        self.head = nn.Sequential(
+            SepConv(hidden_dim, hidden_dim, kernel_size=5, stride=1, padding=2),
+            SepConv(hidden_dim, hidden_dim, kernel_size=5, stride=1, padding=2),
+            InvertedResidual(hidden_dim, 2 * hidden_dim, hidden_dim, kernel_size=3, stride=1)
+        )
+
+        self.class_embed = nn.Conv2d(hidden_dim, num_classes + 1, kernel_size=1)
+        self.bbox_embed = nn.Conv2d(hidden_dim, 4, kernel_size=1)
+        self.backbone = backbone
+
+    def forward(self, search, template):
+        """
+               - search.tensors: batched images, of shape [batch_size x 3 x H_search x W_search]
+               - template.tensors: batched images, of shape [batch_size x 3 x H_template x W_template]
+
+            It returns a dict with the following elements:
+               - "pred_logits": the classification logits for all feature vectors.
+                                Shape= [batch_size x num_vectors x (num_classes + 1)]
+               - "pred_boxes": The normalized boxes coordinates for all feature vectors, represented as
+                               (center_x, center_y, height, width). These values are normalized in [0, 1],
+                               relative to the size of each individual image.
+
+        """
+        feature_search = self.backbone(search)
+        feature_template = self.backbone(template)
+        head_feature = self.correlation_module(feature_search, feature_template)
+        head_feature = self.head(head_feature)
+
+        outputs_class = self.class_embed(head_feature)
+        outputs_class = outputs_class.permute(0, 2, 3, 1).view(outputs_class.shape[0], -1, outputs_class.shape[1])
+        outputs_coord = self.bbox_embed(head_feature).sigmoid()
+        outputs_coord = outputs_coord.permute(0, 2, 3, 1).view(outputs_coord.shape[0], -1, outputs_coord.shape[1])
+        out = {'pred_logits': outputs_class, 'pred_boxes': outputs_coord}
+        return out
+
+    def track(self, search):
+        features_search = self.backbone(search)
+        feature_template = self.zf
+        head_feature = self.correlation_module(features_search, feature_template)
+        head_feature = self.head(head_feature)
+
+        outputs_class = self.class_embed(head_feature)
+        outputs_coord = self.bbox_embed(head_feature).sigmoid()
+        out = {'pred_logits': outputs_class, 'pred_boxes': outputs_coord}
+        return out
+
+    def template(self, z):
+        zf = self.backbone(z)
+        self.zf = zf
+
+
 class SetCriterion(nn.Module):
     """ This class computes the loss for TransT.
     The process happens in two steps:
         1) we compute assignment between ground truth box and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
+
     def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
         """ Create the criterion.
         Parameters:
@@ -204,6 +276,7 @@ class SetCriterion(nn.Module):
 
         return losses
 
+
 class MLP(nn.Module):
     """ Very simple multi-layer perceptron (also called FFN)"""
 
@@ -233,6 +306,7 @@ def transt_resnet50(settings):
     model.to(device)
     return model
 
+
 @model_constructor
 def transt_mobilenet(settings):
     num_classes = 1
@@ -246,6 +320,22 @@ def transt_mobilenet(settings):
     device = torch.device(settings.device)
     model.to(device)
     return model
+
+
+@model_constructor
+def transt_multimax(settings):
+    num_classes = 1
+    backbone_net = build_backbone(settings, backbone_pretrained=False)
+    correlation_module = build_correlation(settings)
+    model = TransT(
+        backbone_net,
+        correlation_module,
+        num_classes=num_classes
+    )
+    device = torch.device(settings.device)
+    model.to(device)
+    return model
+
 
 def transt_loss(settings):
     num_classes = 1
