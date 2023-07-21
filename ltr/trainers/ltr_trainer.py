@@ -109,6 +109,8 @@ class LTRTrainer(BaseTrainer):
                 if (self.settings.print_stats is None or name in self.settings.print_stats) and hasattr(val, 'avg'):
                     print_str += '%s: %.5f  ,  ' % (name, val.avg)
             print(print_str[:-5])
+            # with open(os.path.join(self.settings.env.workspace_dir, self.settings.exp + '_log.txt'), 'a') as f:
+            #     f.write(print_str[:-5] + '\n')
 
     def _stats_new_epoch(self):
         # Record learning rate

@@ -88,12 +88,13 @@ class Backbone(BackboneBase):
     def __init__(self,
                  output_layers,
                  pretrained,
-                 frozen_layers):
+                 frozen_layers,
+                 chn=128):
         # backbone = backbones.resnet50(output_layers=output_layers, pretrained=pretrained,
         #                               frozen_layers=frozen_layers)
         # backbone = backbones.mobilenetv3_large(pretrained=pretrained)
-        backbone = backbones.multimax(pretrained=pretrained)
-        num_channels = 128
+        backbone = backbones.multimax(chn, pretrained=pretrained)
+        num_channels = chn
         super().__init__(backbone, num_channels)
 
 
@@ -116,7 +117,7 @@ class Joiner(nn.Sequential):
 def build_backbone(settings, backbone_pretrained=True, frozen_backbone_layers=()):
     # position_embedding = build_position_encoding(settings)
     # backbone = Backbone(output_layers=['layer3'], pretrained=backbone_pretrained, frozen_layers=frozen_backbone_layers)
-    backbone = Backbone(output_layers=None, pretrained=backbone_pretrained, frozen_layers=frozen_backbone_layers)
+    backbone = Backbone(output_layers=None, pretrained=backbone_pretrained, frozen_layers=None, chn=settings.chn)
     # model = Joiner(backbone, position_embedding)
     # model.num_channels = backbone.num_channels
     return backbone

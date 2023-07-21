@@ -82,5 +82,5 @@ class Correlation(nn.Module):
         return x
 
 
-def build_correlation(settings):
-    return Correlation(chn=settings.correlation_chn)
+def build_correlation(chn):
+    return Correlation(chn)

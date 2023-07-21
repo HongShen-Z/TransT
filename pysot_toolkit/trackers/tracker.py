@@ -81,11 +81,9 @@ class Tracker(object):
                 te_im[:, 0:left_pad, :] = avg_chans
             if right_pad:
                 te_im[:, c + left_pad:, :] = avg_chans
-            im_patch = te_im[int(context_ymin):int(context_ymax + 1),
-                       int(context_xmin):int(context_xmax + 1), :]
+            im_patch = te_im[int(context_ymin):int(context_ymax + 1), int(context_xmin):int(context_xmax + 1), :]
         else:
-            im_patch = im[int(context_ymin):int(context_ymax + 1),
-                       int(context_xmin):int(context_xmax + 1), :]
+            im_patch = im[int(context_ymin):int(context_ymax + 1), int(context_xmin):int(context_xmax + 1), :]
 
         if not np.array_equal(model_sz, original_sz):
             im_patch = cv2.resize(im_patch, (model_sz, model_sz))
@@ -95,8 +93,6 @@ class Tracker(object):
         im_patch = torch.from_numpy(im_patch)
         im_patch = im_patch.cuda()
         return im_patch
-
-
 
     def initialize_features(self):
         if not getattr(self, 'features_initialized', False):
@@ -149,7 +145,7 @@ class Tracker(object):
         # get crop
         x_crop = self.get_subwindow(image, self.center_pos,
                                     self.instance_size,
-                                    round(s_x), self.channel_average)
+                                    s_x, self.channel_average)
 
         # normalize
         x_crop = x_crop.float().mul(1.0 / 255.0).clamp(0.0, 1.0)
@@ -161,8 +157,7 @@ class Tracker(object):
         pred_bbox = self._convert_bbox(outputs['pred_boxes'])
 
         # window penalty
-        pscore = score * (1 - self.window_penalty) + \
-                 self.window * self.window_penalty
+        pscore = score * (1 - self.window_penalty) + self.window * self.window_penalty
 
         best_idx = np.argmax(pscore)
         bbox = pred_bbox[:, best_idx]

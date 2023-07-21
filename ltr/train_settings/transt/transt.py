@@ -11,11 +11,11 @@ from ltr import MultiGPU
 def run(settings):
     # Most common settings are assigned in the settings struct
     settings.device = 'cuda'
-    settings.description = 'TransT with multimax settings.'
-    settings.batch_size = 76    # 38
+    settings.description = 'multimax settings.'
+    settings.batch_size = 80    # 38
     settings.num_workers = 4
     settings.multi_gpu = False
-    settings.print_interval = 10
+    settings.print_interval = 100
     settings.normalize_mean = [0.485, 0.456, 0.406]
     settings.normalize_std = [0.229, 0.224, 0.225]
     settings.search_area_factor = 4.0
@@ -27,8 +27,8 @@ def run(settings):
     settings.center_jitter_factor = {'search': 3, 'template': 0}
     settings.scale_jitter_factor = {'search': 0.25, 'template': 0}
 
-    # correlation module
-    settings.correlation_chn = 128
+    # channels
+    settings.chn = 128
 
     # Transformer
     # settings.position_embedding = 'sine'
@@ -39,10 +39,10 @@ def run(settings):
     # settings.featurefusion_layers = 4
 
     # Train datasets
-    # lasot_train = Lasot(settings.env.lasot_dir, split='train')
+    lasot_train = Lasot(settings.env.lasot_dir, split='train')
     got10k_train = Got10k(settings.env.got10k_dir, split='vottrain')
-    # trackingnet_train = TrackingNet(settings.env.trackingnet_dir, set_ids=list(range(4)))
-    # coco_train = MSCOCOSeq(settings.env.coco_dir)
+    trackingnet_train = TrackingNet(settings.env.trackingnet_dir, set_ids=list(range(4)))
+    coco_train = MSCOCOSeq(settings.env.coco_dir)
 
     # The joint augmentation transform, that is applied to the pairs jointly
     transform_joint = tfm.Transform(tfm.ToGrayscale(probability=0.05))
@@ -63,12 +63,12 @@ def run(settings):
                                                         joint_transform=transform_joint)
 
     # The sampler for training
-    # dataset_train = sampler.TransTSampler([lasot_train, got10k_train, coco_train, trackingnet_train], [1, 1, 1, 1],
-    #                                       samples_per_epoch=1000 * settings.batch_size, max_gap=100,
-    #                                       processing=data_processing_train)
-    dataset_train = sampler.TransTSampler([got10k_train], [1],
+    dataset_train = sampler.TransTSampler([lasot_train, got10k_train, coco_train, trackingnet_train], [1, 1, 1, 1],
                                           samples_per_epoch=1000 * settings.batch_size, max_gap=100,
                                           processing=data_processing_train)
+    # dataset_train = sampler.TransTSampler([got10k_train], [1],
+    #                                       samples_per_epoch=1000 * settings.batch_size, max_gap=100,
+    #                                       processing=data_processing_train)
 
     # The loader for training
     loader_train = LTRLoader('train', dataset_train, training=True, batch_size=settings.batch_size,
@@ -95,11 +95,11 @@ def run(settings):
         {"params": [p for n, p in model.named_parameters() if "backbone" not in n and p.requires_grad]},
         {
             "params": [p for n, p in model.named_parameters() if "backbone" in n and p.requires_grad],
-            "lr": 1e-5,
+            "lr": 1e-4,     # 1e-5
         },
     ]
     optimizer = torch.optim.AdamW(param_dicts, lr=1e-4, weight_decay=1e-4)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 500)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 500, gamma=0.1)
 
     # Create trainer
     trainer = LTRTrainer(actor, [loader_train], optimizer, settings, lr_scheduler)

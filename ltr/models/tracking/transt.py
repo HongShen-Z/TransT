@@ -149,7 +149,9 @@ class TransT(nn.Module):
         head_feature = self.head(head_feature)
 
         outputs_class = self.class_embed(head_feature)
+        outputs_class = outputs_class.permute(0, 2, 3, 1).view(outputs_class.shape[0], -1, outputs_class.shape[1])
         outputs_coord = self.bbox_embed(head_feature).sigmoid()
+        outputs_coord = outputs_coord.permute(0, 2, 3, 1).view(outputs_coord.shape[0], -1, outputs_coord.shape[1])
         out = {'pred_logits': outputs_class, 'pred_boxes': outputs_coord}
         return out
 
@@ -326,7 +328,7 @@ def transt_mobilenet(settings):
 def transt_multimax(settings):
     num_classes = 1
     backbone_net = build_backbone(settings, backbone_pretrained=False)
-    correlation_module = build_correlation(settings)
+    correlation_module = build_correlation(chn=settings.chn)
     model = TransT(
         backbone_net,
         correlation_module,

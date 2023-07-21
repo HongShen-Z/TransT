@@ -144,7 +144,7 @@ class MultiMax(nn.Module):
                 m.bias.data.zero_()
 
 
-def multimax(pretrained=False, **kwargs):
+def multimax(chn, pretrained=False, **kwargs):
     """
     Constructs a MultiMax model
     """
@@ -157,12 +157,12 @@ def multimax(pretrained=False, **kwargs):
         [3,   2,  64, 1],
         [3,   2,  64, 1],
         # 32,32,64 -> 16,16,128     1/16
-        [5,   6,  128, 2],
-        [3,   4,  128, 1],
-        [3,   3,  128, 1],
-        [3,   3,  128, 1],
-        [3,   6,  128, 1],
-        [3,   3,  128, 1]
+        [5,   6,  chn, 2],
+        [3,   4,  chn, 1],
+        [3,   3,  chn, 1],
+        [3,   3,  chn, 1],
+        [3,   6,  chn, 1],
+        [3,   3,  chn, 1]
         # # 16,16,128 -> 8,8,160      1/32
         # [3,   6, 160, 2],
         # [5,   4, 160, 1],
