@@ -132,6 +132,9 @@ class TransT(nn.Module):
         """
         feature_search = self.backbone(search)
         feature_template = self.backbone(template)
+        if torch.onnx.is_in_onnx_export():
+            feature_template = feature_template.view(feature_template.size(1), 1, feature_template.size(2),
+                                                     feature_template.size(3))
         head_feature = self.correlation_module(feature_search, feature_template)
         head_feature = self.head(head_feature)
 
@@ -157,6 +160,8 @@ class TransT(nn.Module):
 
     def template(self, z):
         zf = self.backbone(z)
+        # for deployment acceleration
+        zf = zf.view(zf.size(1), 1, zf.size(2), zf.size(3))
         self.zf = zf
 
 

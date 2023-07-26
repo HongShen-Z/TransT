@@ -42,11 +42,11 @@ def main():
     # load config
 
     dataset_root = '/home/test/zhs/datasets/GOT-10k'  # Absolute path of the dataset
-    net_path = '/home/test/zhs/projects/TransT/checkpoints/checkpoints/ltr/transt/transt/TransT_ep0075.pth.tar'  # Absolute path of the model
+    net_path = '/home/test/zhs/projects/TransT/exps/checkpoints/normal/TransT_ep0090.pth.tar'  # Absolute path of the model
 
     # create model
     net = NetWithBackbone(net_path=net_path, use_gpu=True)
-    tracker = Tracker(name='transt', net=net, window_penalty=0.49, exemplar_size=112, instance_size=256)
+    tracker = Tracker(name=args.name, net=net, window_penalty=0.49, exemplar_size=112, instance_size=256)
 
     # create dataset
     dataset = DatasetFactory.create_dataset(name=args.dataset,

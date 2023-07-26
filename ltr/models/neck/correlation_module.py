@@ -3,13 +3,21 @@ from torch import nn
 from torch.nn import functional as F
 
 
-def xcorr_depthwise(x, kernel):
+def xcorr_depthwise(x, kernel, channel):
     batch = kernel.size(0)
-    channel = kernel.size(1)
+    # channel = kernel.size(1)
     x = x.view(1, batch * channel, x.size(2), x.size(3))
     kernel = kernel.view(batch * channel, 1, kernel.size(2), kernel.size(3))
     out = F.conv2d(x, kernel, padding=3, groups=batch * channel)
     out = out.view(batch, channel, out.size(2), out.size(3))
+    return out
+
+
+# for deployment acceleration
+def xcorr_depthwise_deploy(x, kernel, channel):
+    # kernel: [channel, 1, ksize, ksize]
+    # x: [1, channel, h, w]
+    out = F.conv2d(x, kernel, padding=3, groups=channel)
     return out
 
 
@@ -68,17 +76,22 @@ class Correlation(nn.Module):
 
     def forward(self, x, kernel):
         # (128, 16, 16)
-        new_features = xcorr_depthwise(x, kernel)
+        if torch.onnx.is_in_onnx_export():
+            xcorr = xcorr_depthwise_deploy
+        else:
+            xcorr = xcorr_depthwise
+        new_features = xcorr(x, kernel, self.chn)
         x = torch.cat((x, new_features), 1)
         x = self.sep_conv1(x)
 
-        new_features = xcorr_depthwise(x, kernel)
+        new_features = xcorr(x, kernel, self.chn)
         x = torch.cat((x, new_features), 1)
         x = self.sep_conv2(x)
 
-        new_features = xcorr_depthwise(x, kernel)
+        new_features = xcorr(x, kernel, self.chn)
         x = torch.cat((x, new_features), 1)
         x = self.sep_conv3(x)
+
         return x
 
 
