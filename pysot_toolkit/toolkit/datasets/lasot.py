@@ -65,9 +65,10 @@ class LaSOTDataset(Dataset):
         super(LaSOTDataset, self).__init__(name, dataset_root)
         with open(os.path.join(dataset_root, name+'.json'), 'r') as f:
             meta_data = json.load(f)
+            meta_data_eval = {k: meta_data[k] for k in list(meta_data)[:50]}
 
         # load videos
-        pbar = tqdm(meta_data.keys(), desc='loading '+name, ncols=100)
+        pbar = tqdm(meta_data_eval.keys(), desc='loading '+name, ncols=100)
         self.videos = {}
         for video in pbar:
             pbar.set_postfix_str(video)

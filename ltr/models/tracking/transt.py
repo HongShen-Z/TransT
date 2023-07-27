@@ -161,7 +161,8 @@ class TransT(nn.Module):
     def template(self, z):
         zf = self.backbone(z)
         # for deployment acceleration
-        zf = zf.view(zf.size(1), 1, zf.size(2), zf.size(3))
+        if torch.onnx.is_in_onnx_export():
+            zf = zf.view(zf.size(1), 1, zf.size(2), zf.size(3))
         self.zf = zf
 
 

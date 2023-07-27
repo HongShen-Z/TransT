@@ -41,8 +41,8 @@ torch.set_num_threads(1)
 def main():
     # load config
 
-    dataset_root = '/home/test/zhs/datasets/GOT-10k'  # Absolute path of the dataset
-    net_path = '/home/test/zhs/projects/TransT/exps/checkpoints/normal/TransT_ep0090.pth.tar'  # Absolute path of the model
+    dataset_root = '/home/test/zhs/datasets/LaSOT'  # Absolute path of the dataset
+    net_path = '/home/test/zhs/projects/TransT/exps/checkpoints/normal/TransT_ep0177.pth.tar'  # Absolute path of the model
 
     # create model
     net = NetWithBackbone(net_path=net_path, use_gpu=True)
