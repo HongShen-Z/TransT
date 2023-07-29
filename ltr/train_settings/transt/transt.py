@@ -12,7 +12,7 @@ def run(settings):
     # Most common settings are assigned in the settings struct
     settings.device = 'cuda'
     settings.description = 'multimax settings.'
-    settings.batch_size = 80    # 38
+    settings.batch_size = 38    # 38 80
     settings.num_workers = 4
     settings.multi_gpu = False
     settings.print_interval = 100
@@ -92,17 +92,21 @@ def run(settings):
 
     # Optimizer
     param_dicts = [
-        {"params": [p for n, p in model.named_parameters() if "backbone" not in n and p.requires_grad]},
+        {
+            "params": [p for n, p in model.named_parameters() if "backbone" not in n and p.requires_grad],
+            "initial_lr": 1e-4,
+        },
         {
             "params": [p for n, p in model.named_parameters() if "backbone" in n and p.requires_grad],
-            "lr": 1e-4,     # 1e-5
+            "initial_lr": 1e-4,     # 1e-5
         },
     ]
     optimizer = torch.optim.AdamW(param_dicts, lr=1e-4, weight_decay=1e-4)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 500, gamma=0.1)
+    lr_scheduler = None     # torch.optim.lr_scheduler.StepLR(optimizer, 200, gamma=0.1)
 
     # Create trainer
     trainer = LTRTrainer(actor, [loader_train], optimizer, settings, lr_scheduler)
 
     # Run training (set fail_safe=False if you are debugging)
-    trainer.train(1000, load_latest=True, fail_safe=False)
+    trainer.train(1000, load_latest=True, fail_safe=False,
+                  checkpoint='/home/test/zhs/projects/TransT/exps/checkpoints/normal/TransT_ep0212.pth.tar')

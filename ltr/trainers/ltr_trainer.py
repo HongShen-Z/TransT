@@ -116,7 +116,7 @@ class LTRTrainer(BaseTrainer):
         # Record learning rate
         for loader in self.loaders:
             if loader.training:
-                lr_list = self.lr_scheduler.get_lr()
+                lr_list = self.lr_scheduler.get_last_lr()
                 for i, lr in enumerate(lr_list):
                     var_name = 'LearningRate/group{}'.format(i)
                     if var_name not in self.stats[loader.name].keys():

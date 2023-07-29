@@ -48,8 +48,7 @@ class BaseTrainer:
         else:
             self._checkpoint_dir = None
 
-
-    def train(self, max_epochs, load_latest=False, fail_safe=True):
+    def train(self, max_epochs, load_latest=False, fail_safe=True, checkpoint=None):
         """Do training for the given number of epochs.
         args:
             max_epochs - Max number of training epochs,
@@ -62,10 +61,11 @@ class BaseTrainer:
         for i in range(num_tries):
             try:
                 if load_latest:
-                    self.load_checkpoint()
+                    self.load_checkpoint(checkpoint=checkpoint)
 
-                for epoch in range(self.epoch+1, max_epochs+1):
+                for epoch in range(self.epoch + 1, max_epochs + 1):
                     self.epoch = epoch
+                    print(self.epoch, self.lr_scheduler.get_last_lr())
 
                     self.train_epoch()
 
@@ -87,10 +87,8 @@ class BaseTrainer:
 
         print('Finished training!')
 
-
     def train_epoch(self):
         raise NotImplementedError
-
 
     def save_checkpoint(self):
         """Saves a checkpoint of the network and other variables."""
@@ -111,7 +109,6 @@ class BaseTrainer:
             'settings': self.settings
         }
 
-
         directory = '{}/{}'.format(self._checkpoint_dir, self.settings.project_path)
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -125,8 +122,7 @@ class BaseTrainer:
         # Now rename to actual checkpoint. os.rename seems to be atomic if files are on same filesystem. Not 100% sure
         os.rename(tmp_file_path, file_path)
 
-
-    def load_checkpoint(self, checkpoint = None, fields = None, ignore_fields = None, load_constructor = False):
+    def load_checkpoint(self, checkpoint=None, fields=None, ignore_fields=None, load_constructor=False):
         """Loads a network checkpoint file.
 
         Can be called in three different ways:
@@ -199,7 +195,8 @@ class BaseTrainer:
         if 'net_info' in checkpoint_dict and checkpoint_dict['net_info'] is not None:
             net.info = checkpoint_dict['net_info']
 
-        # Update the epoch in lr scheduler
+        # Update scheduler
+        self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, [215], gamma=0.1)
         if 'epoch' in fields:
             self.lr_scheduler.last_epoch = self.epoch
 
